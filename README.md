@@ -11,8 +11,11 @@ Compile caffe with option WITH_PYTHON_LAYER = 1
 
 ## download pre-trained model
 
-dowload natual language segmentation model /home/zhenyang/Workspace/devel/project/vision/NLST/snapshots/lang_high_res_seg/_iter_25000.caffemodel to MAIN_PATH/snapshots/lang_high_res_seg/_iter_25000.caffemodel
-dowload tracking model (VGG16) /home/zhenyang/Workspace/devel/project/vision/NLST/VGG16.v2.caffemodel to MAIN_PATH/VGG16.v2.caffemodel
+dowload natual language segmentation model /home/zhenyang/Workspace/devel/project/vision/NLST/snapshots/lang_high_res_seg/_iter_25000.caffemodel 
+to MAIN_PATH/snapshots/lang_high_res_seg/_iter_25000.caffemodel
+
+dowload tracking model (VGG16) /home/zhenyang/Workspace/devel/project/vision/NLST/VGG16.v2.caffemodel 
+to MAIN_PATH/VGG16.v2.caffemodel
 
 ## run demo code
 
