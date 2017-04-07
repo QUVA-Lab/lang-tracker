@@ -1,0 +1,245 @@
+from __future__ import absolute_import, division, print_function
+
+import sys
+import os
+import skimage.io
+import h5py
+import numpy as np
+import caffe
+import json
+import time
+from glob import glob, iglob
+from tqdm import tqdm
+import StringIO
+
+import sint_model_test as sint_model
+import val_config
+
+from util import processing_tools, im_processing, text_processing, eval_tools
+
+
+# setup dataset:
+def make_data_dict(data_dir, meta_dir, split):
+    d = dict()
+    with open(data_dir+'../'+split+'.txt') as f:
+        videos = f.read().splitlines()
+    for i, video in enumerate(videos):
+        video_nr = i
+        video_name = video
+        video_folder = video.split('_')[0]
+        video_file = ''.join([data_dir, video_folder, '/', video_name])
+        gtbox_file = ''.join([meta_dir, video_name, '.mat'])
+        d[video_nr] = (video_name, video_file, gtbox_file)
+    return d
+
+def load_video_metadata(video_name, gtbox_file):
+    metadata = np.array(h5py.File(gtbox_file)['gtboxes']).transpose()
+    frameids = metadata[:, 0].astype(np.int)
+    gtboxes = metadata[:, 1:].astype(np.float32)
+
+    return frameids, gtboxes
+
+
+################################################################################
+# Evaluation network
+################################################################################
+
+def inference(config):
+    with open('./sint_model/conv_features.prototxt', 'w') as f:
+        f.write(str(sint_model.generate_conv_features('val', config)))
+    with open('./sint_model/conv_scores.prototxt', 'w') as f:
+        f.write(str(sint_model.generate_conv_scores('val', config)))
+
+    caffe.set_device(config.gpu_id)
+    caffe.set_mode_gpu()
+
+    for snapshot in config.snapshots:
+        model_weights = '%s_iter_%d.caffemodel' % (config.pretrained_model, snapshot)
+        # Load pretrained model
+        conv_features_net = caffe.Net('./sint_model/conv_features.prototxt',
+                                      model_weights,
+                                      caffe.TEST)
+        conv_scores_net = caffe.Net('./sint_model/conv_scores.prototxt',
+                               model_weights,
+                               caffe.TEST)
+
+        #import ipdb; ipdb.set_trace()
+        ################################################################################
+        # Load image and bounding box annotations
+        ################################################################################
+        print('\n\nStart evaluate snapshot %d ... \n\n'%(snapshot))
+        data_dict = make_data_dict(config.data_dir, config.meta_dir, config.split)
+        total = len(data_dict)
+        print('In total %d videos to evaluate.'%total)
+        dummy_label = np.zeros((config.N, 1))
+
+        for video_nr in range(total):
+            video_name, video_file, gtbox_file = data_dict[video_nr]
+            video_frames = sorted(glob(video_file+'/*.jpg'))
+
+            frameids, gtboxes = load_video_metadata(video_name, gtbox_file)
+            num_frames = frameids[-1] - frameids[0] + 1
+            print('Start processing video %s, starting frame %s, (total %d frames).'%(video_name,video_frames[frameids[0]-1],num_frames))
+
+            # query box
+            init_box = gtboxes[0,:].copy()
+            init_box_w = init_box[2] - init_box[0] + 1
+            init_box_h = init_box[3] - init_box[1] + 1
+
+            # caffe.io.load_image(imagefile)*255.0
+            qimg = skimage.io.imread(video_frames[frameids[0]-1])
+            if qimg.ndim == 2:
+                qimg = np.tile(qimg[:, :, np.newaxis], (1, 1, 3))
+            qimg_height, qimg_width = qimg.shape[:2]
+
+            # select the twice larger box to include some context
+            qbox = init_box.copy()
+            #qbox[0] = np.maximum(qbox[0] - 0.5*init_box_w, 1)
+            #qbox[1] = np.maximum(qbox[1] - 0.5*init_box_h, 1)
+            #qbox[2] = np.minimum(qbox[2] + 0.5*init_box_w, qimg_width)
+            #qbox[3] = np.minimum(qbox[3] + 0.5*init_box_h, qimg_height)
+            qbox[0] = qbox[0] - 0.5*init_box_w
+            qbox[1] = qbox[1] - 0.5*init_box_h
+            qbox[2] = qbox[2] + 0.5*init_box_w
+            qbox[3] = qbox[3] + 0.5*init_box_h
+            qbox = np.round(qbox).astype(int).reshape((-1, 4))
+
+            # extract query box features
+            inputs = np.zeros((config.N, config.input_H, config.input_W, 3), dtype=np.float32)
+            inputs[0, ...] = im_processing.crop_and_pad_bboxes_subtract_mean(
+                                qimg, qbox, config.qimage_size*2, sint_model.channel_mean)
+            inputs_trans = inputs.transpose((0, 3, 1, 2))
+            inputs_trans = inputs_trans[:, ::-1, :, :]
+            conv_features_net.blobs['image'].data[...] = inputs_trans
+            conv_features_net.blobs['label'].data[...] = dummy_label
+            conv_features_net.forward()
+            conv_features = conv_features_net.blobs['feat_all'].data[...].copy()
+
+            # crop feature map
+            qfeat = conv_features[0, ...].copy()
+            qfeat_crop = im_processing.crop_featmap_center(qfeat)
+            qfeat_crop_resh = qfeat_crop.reshape((-1, qfeat_crop.shape[0], qfeat_crop.shape[1], qfeat_crop.shape[2]))
+
+            # set up dyn filters
+            #print('params nr %d'%(len(conv_scores_net.params['scores']), ))
+            conv_scores_net.params['scores'][0].data[...] = qfeat_crop_resh
+
+            ################################################################################
+            # Start tracking target on each frame
+            ################################################################################
+            results = np.zeros((num_frames, 6))
+            results[0, 0] = 1
+            results[0, 1:5] = init_box
+            results[0, -1] = frameids[0]
+
+            center_x = np.ceil((init_box[2]-init_box[0]+1)/2.0) + init_box[0] - 1
+            center_y = np.ceil((init_box[3]-init_box[1]+1)/2.0) + init_box[1] - 1
+
+            sz_times = config.sz_times
+            sample_w = init_box_w
+            sample_h = init_box_h
+            
+            prev_scale = 1
+            counter = 1
+            start_time = time.time()
+            for ii in tqdm(range(frameids[0]+1, frameids[-1]+1)):
+                img = skimage.io.imread(video_frames[ii-1])
+                if img.ndim == 2:
+                    img = np.tile(img[:, :, np.newaxis], (1, 1, 3))
+                img_height, img_width = img.shape[:2]
+
+                # assemble box proposals with multiple scales
+                boxes = np.zeros((config.scales.size, 4))
+                for ss, scale in enumerate(config.scales):
+                    #boxes[ss, 0] = np.maximum(center_x - 0.5*sz_times*scale*sample_w + 1, 1)
+                    #boxes[ss, 1] = np.maximum(center_y - 0.5*sz_times*scale*sample_h + 1, 1)
+                    #boxes[ss, 2] = np.minimum(center_x + 0.5*sz_times*scale*sample_w, img_width)
+                    #boxes[ss, 3] = np.minimum(center_y + 0.5*sz_times*scale*sample_h, img_height)
+                    boxes[ss, 0] = center_x - 0.5*sz_times*scale*sample_w + 1
+                    boxes[ss, 1] = center_y - 0.5*sz_times*scale*sample_h + 1
+                    boxes[ss, 2] = center_x + 0.5*sz_times*scale*sample_w
+                    boxes[ss, 3] = center_y + 0.5*sz_times*scale*sample_h
+                boxes = np.round(boxes).astype(int).reshape((-1, 4))
+                num_boxes = boxes.shape[0]
+
+                # extract query box features
+                inputs = np.zeros((config.N, config.input_H, config.input_W, 3), dtype=np.float32)
+                inputs[:num_boxes, ...] = im_processing.crop_and_pad_bboxes_subtract_mean(
+                                             img, boxes, config.timage_size, sint_model.channel_mean)
+                inputs_trans = inputs.transpose((0, 3, 1, 2))
+                inputs_trans = inputs_trans[:, ::-1, :, :]
+                conv_scores_net.blobs['image'].data[...] = inputs_trans
+                conv_scores_net.blobs['label'].data[...] = dummy_label
+                conv_scores_net.forward()
+                scores_val = conv_scores_net.blobs['scores'].data[...].copy()
+                scores_val = scores_val[:num_boxes, ...]
+
+                # obtain sizes
+                map_h = scores_val.shape[2]
+                map_w = scores_val.shape[3]
+                map_size = map_h * map_w
+
+                # scale change penalty
+                scores_val = np.multiply(scores_val, config.scale_penalty)
+                scores_val = scores_val.reshape(-1)
+
+                max_idx = np.argmax(scores_val)+1
+                max_score = scores_val[max_idx-1]
+                s_idx = np.ceil(float(max_idx)/map_size)
+                max_idx_within = np.fmod(max_idx,map_size)
+                r_idx = 0
+                c_idx = 0
+                if max_idx_within == 0:
+                    r_idx = map_h
+                    c_idx = map_w
+                else:
+                    r_idx = np.ceil(float(max_idx_within)/map_w)
+                    c_idx = np.fmod(max_idx_within,map_w)
+                    if c_idx == 0:
+                        c_idx = map_w
+
+                # obtain box prediction
+                bbox = boxes[int(s_idx-1), :].copy()
+                predict_box = bbox.copy()
+                predict_box[0] = np.maximum(bbox[0] + (c_idx-1) * config.spatial_ratio / config.timage_size * (bbox[2]-bbox[0]+1), 1)
+                predict_box[1] = np.maximum(bbox[1] + (r_idx-1) * config.spatial_ratio / config.timage_size * (bbox[3]-bbox[1]+1), 1)
+                predict_box[2] = np.minimum(predict_box[0] + sample_w * config.scales[int(s_idx-1)] - 1, img_width) # Be careful when extended to multiple scales
+                predict_box[3] = np.minimum(predict_box[1] + sample_h * config.scales[int(s_idx-1)] - 1, img_height)
+
+                # record result
+                results[counter, 0] = max_score
+                results[counter, 1:5] = predict_box
+                results[counter, -1] = ii
+
+                # update center coordinates
+                center_x = np.ceil((predict_box[2]-predict_box[0]+1)/2.0) + predict_box[0] - 1
+                center_y = np.ceil((predict_box[3]-predict_box[1]+1)/2.0) + predict_box[1] - 1
+                prev_scale = prev_scale*(1-config.scaleLP) + config.scales[int(s_idx-1)]*config.scaleLP
+
+                sample_w = sample_w * prev_scale 
+                sample_h = sample_h * prev_scale
+
+                counter = counter + 1
+
+            elapsed_time = time.time() - start_time
+            print('[%d] %s done in %f seconds. [%f fps]'%(video_nr+1, video_name, elapsed_time, num_frames/elapsed_time))
+
+            # save results to file
+            result_saver = '%s/results_%s_iter_%d' % (config.result_dir, config.signature, snapshot)
+            if not os.path.exists(result_saver):
+                os.makedirs(result_saver)
+
+            filename = '%s/%s_%s_iter_%d.txt' % (result_saver, video_name, config.signature, snapshot)
+            fp = open(filename, 'w')
+            for jj in range(num_frames):
+                fp.write('%f %d %d %d %d %d\n'%(results[jj,0],int(results[jj,1]),int(results[jj,2]),int(results[jj,3]),int(results[jj,4]),int(results[jj,5])))
+            fp.close()
+
+        del conv_features_net, conv_scores_net
+        print('Finish evlaluation on the whole test set.')
+
+
+if __name__ == '__main__':
+    config = val_config.Config()
+    inference(config)
+

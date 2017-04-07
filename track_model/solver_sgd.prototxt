@@ -1,0 +1,15 @@
+train_net: "./sint_model/proto_train.prototxt"
+
+max_iter: 100000
+display: 50 
+snapshot: 1000
+snapshot_prefix: "./snapshots/sint_model/"
+
+solver_type: SGD
+base_lr: 0.0004
+momentum: 0.9
+weight_decay: 0.001
+lr_policy: "inv"
+gamma: 0.001
+power: 0.75
+
