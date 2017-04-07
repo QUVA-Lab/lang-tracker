@@ -13,10 +13,10 @@ WITH_PYTHON_LAYER = 1
 
 ## download pre-trained model
 
-1. Dowload natual language segmentation model [here](/home/zhenyang/Workspace/devel/project/vision/NLST/snapshots/lang_high_res_seg/_iter_25000.caffemodel)
+1. Dowload natual language segmentation model [quva01](quva01:/home/zhenyang/Workspace/devel/project/vision/NLST/snapshots/lang_high_res_seg/_iter_25000.caffemodel)
 and copy to `MAIN_PATH/snapshots/lang_high_res_seg/_iter_25000.caffemodel`
 
-2. Dowload tracking model [here](/home/zhenyang/Workspace/devel/project/vision/NLST/VGG16.v2.caffemodel)
+2. Dowload tracking model [quva01](quva01:/home/zhenyang/Workspace/devel/project/vision/NLST/VGG16.v2.caffemodel)
 and copy to `MAIN_PATH/VGG16.v2.caffemodel`
 
 ## run demo code
