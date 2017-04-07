@@ -30,8 +30,8 @@ class Config():
 
         # Testing Params
         self.gpu_id = 0
-        #self.pretrained_model = '../VGG16.v2.caffemodel'
-        self.pretrained_model = '../VGG_ILSVRC_16_layers.caffemodel'
+        self.pretrained_model = '../VGG16.v2.caffemodel'
+        #self.pretrained_model = '../VGG_ILSVRC_16_layers.caffemodel'
 
 
         # Data Params
