@@ -21,7 +21,7 @@ and copy to `MAIN_PATH/VGG16.v2.caffemodel`
 
 ## run demo code
 
-### ipython inotebook code
+### ipython notebook code
 
 1. Given a image and a natural language query, how to indentify a target (used on the first query frame of a video)
 ```
