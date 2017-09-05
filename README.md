@@ -1,5 +1,5 @@
 # Tracking by Natural Language Specification
-![Image](http://isis-data.science.uva.nl/zhenyang/cvpr17-langtracker/images/model.jpg)
+![Image](http://isis-data.science.uva.nl/zhenyang/cvpr17-langtracker/images/model.png)
 
 This repository contains the code for the following paper:
 
