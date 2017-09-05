@@ -22,10 +22,10 @@ WITH_PYTHON_LAYER = 1
 
 ## Download pre-trained models
 
-1. Download natural language segmentation model [link](http://isis-data.science.uva.nl/zhenyang/cvpr17-langtracker/code/pretrain-models/snapshots/lang_high_res_seg/_iter_25000.caffemodel)
+1. Download natural language segmentation model [caffemodel](http://isis-data.science.uva.nl/zhenyang/cvpr17-langtracker/code/pretrain-models/snapshots/lang_high_res_seg/_iter_25000.caffemodel)
 and copy to `MAIN_PATH/snapshots/lang_high_res_seg/_iter_25000.caffemodel`
 
-2. Download tracking model [link](http://isis-data.science.uva.nl/zhenyang/cvpr17-langtracker/code/pretrain-models/VGG16.v2.caffemodel)
+2. Download tracking model [caffemodel](http://isis-data.science.uva.nl/zhenyang/cvpr17-langtracker/code/pretrain-models/VGG16.v2.caffemodel)
 and copy to `MAIN_PATH/VGG16.v2.caffemodel`
 
 ## Run demo code
