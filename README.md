@@ -1,6 +1,15 @@
-# lang-track
-Tracking by Natural Language Specification
+# Tracking by Natural Language Specification
+This repository contains the code for the following paper:
 
+* Z. Li, R. Tao, E. Gavves, C. G. M. Snoek, A. W. M. Smeulders, *Tracking by Natural Language Specification*, in Computer Vision and Pattern Recognition (CVPR), 2017 ([PDF](http://openaccess.thecvf.com/content_cvpr_2017/papers/Li_Tracking_by_Natural_CVPR_2017_paper.pdf))
+```
+@article{li2017langtracker,
+  title={Tracking by Natural Language Specification},
+  author={Li, Zhenyang and Tao, Ran and Gavves, Efstratios and Snoek, Cees G. M. and Smeulders, Arnold W. M.},
+  journal={Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition},
+  year={2017}
+}
+```
 # How to use it
 
 ## Download and setup Caffe (our own branch)
@@ -13,17 +22,19 @@ WITH_PYTHON_LAYER = 1
 
 ## Download pre-trained models
 
-1. Download natual language segmentation model [quva01](/home/zhenyang/Workspace/devel/project/vision/NLST/snapshots/lang_high_res_seg/_iter_25000.caffemodel)
+1. Download natural language segmentation model [link](http://isis-data.science.uva.nl/zhenyang/cvpr17-langtracker/code/pretrain-models/snapshots/lang_high_res_seg/_iter_25000.caffemodel)
 and copy to `MAIN_PATH/snapshots/lang_high_res_seg/_iter_25000.caffemodel`
 
-2. Download tracking model [quva01](/home/zhenyang/Workspace/devel/project/vision/NLST/VGG16.v2.caffemodel)
+2. Download tracking model [link](http://isis-data.science.uva.nl/zhenyang/cvpr17-langtracker/code/pretrain-models/VGG16.v2.caffemodel)
 and copy to `MAIN_PATH/VGG16.v2.caffemodel`
 
 ## Run demo code
 
 ### ipython notebook code
 
-1. Given an image and a natural language query, how to identify a target (used on the first query frame of a video)
+Here we first demostrate how the model II in the paper works with example videos:
+
+1. Given an image and a natural language query, how to identify a target (applied on the first query frame of a video only)
 ```
 demo/lang_seg_demo.ipynb
 ```
