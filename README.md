@@ -1,9 +1,11 @@
 # Tracking by Natural Language Specification
+![Image](http://isis-data.science.uva.nl/zhenyang/cvpr17-langtracker/images/model.jpg)
+
 This repository contains the code for the following paper:
 
 * Z. Li, R. Tao, E. Gavves, C. G. M. Snoek, A. W. M. Smeulders, *Tracking by Natural Language Specification*, in Computer Vision and Pattern Recognition (CVPR), 2017 ([PDF](http://openaccess.thecvf.com/content_cvpr_2017/papers/Li_Tracking_by_Natural_CVPR_2017_paper.pdf))
 ```
-@article{li2017langtracker,
+@article{li2017cvpr,
   title={Tracking by Natural Language Specification},
   author={Li, Zhenyang and Tao, Ran and Gavves, Efstratios and Snoek, Cees G. M. and Smeulders, Arnold W. M.},
   journal={Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition},
