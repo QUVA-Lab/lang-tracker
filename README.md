@@ -16,7 +16,7 @@ This repository contains the code for the following paper:
 
 ## Download and setup Caffe (our own branch)
 
-1. Caffe branch [here](https://github.com/mathrho/lang-track/tree/langtrackV3) (Note: `langtrackV3` branch not `master` branch)
+1. Caffe branch [here](https://github.com/zhenyangli/caffe-lang-track/tree/langtrackV3) (Note: `langtrackV3` branch not `master` branch)
 2. Compile Caffe with option 
 ```
 WITH_PYTHON_LAYER = 1
