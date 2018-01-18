@@ -43,7 +43,7 @@ demo/lang_seg_demo.ipynb
 
 2. Given a visual target (a box identified from step 1) and a sequence of frames, how to track the object in all the frames
 ```
-demo/lang_track_demo.ipynb.ipynb
+demo/lang_track_demo.ipynb
 ```
 
 
