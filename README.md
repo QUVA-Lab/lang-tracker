@@ -14,10 +14,11 @@ This repository contains the code for the following paper:
 ```
 
 # Download Dataset
-Lingual Lingual OTB99 [Sentences](http://isis-data.science.uva.nl/zhenyang/cvpr17-langtracker/data/OTB_sentences.zip)
-Lingual ImageNet [Sentences](http://isis-data.science.uva.nl/zhenyang/cvpr17-langtracker/data/ImageNet_sentences.zip)
+### Lingual Lingual OTB99 [Sentences](http://isis-data.science.uva.nl/zhenyang/cvpr17-langtracker/data/OTB_sentences.zip)
 
-Please note that we use all the frames from original [OTB100](http://cvlab.hanyang.ac.kr/tracker_benchmark/datasets.html) dataset in our OTB99 videos, while for [ImageNet](http://vision.cs.unc.edu/ilsvrc2015/ui/vid) videos we may only select a subsequence (see start/end frames we selected for each video in train.txt or test.txt).
+### Lingual ImageNet [Sentences](http://isis-data.science.uva.nl/zhenyang/cvpr17-langtracker/data/ImageNet_sentences.zip)
+
+Please note that we use all the frames from original [OTB100](http://cvlab.hanyang.ac.kr/tracker_benchmark/datasets.html) dataset in our OTB99 videos, while for [ImageNet](http://vision.cs.unc.edu/ilsvrc2015/ui/vid) videos we may only select a subsequence (see start/end frames we selected for each video in `train.txt` or `test.txt`).
 
 # How to use the demo code
 
